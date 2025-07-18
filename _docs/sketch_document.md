@@ -1055,3 +1055,36 @@ Allocated addresses:
   10.100.1.91 (kube-system/hubble-ui-76d4965bb6-zbvb7 [restored])
 IPv4 BIG TCP:           Disabled
 ```
+
+
+## Cilium Agent 내부에 있는 C언어 파일
+
+```bash
+cd /var/lib/cilium/bpf/
+root@cilium-ctr:/var/lib/cilium/bpf# ll 
+total 336
+drwxr-xr-x 1 root root  4096 Jun 18 23:14 ./
+drwxr-x--- 1 root root  4096 Jul 17 05:35 ../
+-rw-r--r-- 1 root root   420 Jun 18 23:14 COPYING
+-rw-r--r-- 1 root root  1296 Jun 18 23:14 LICENSE.BSD-2-Clause
+-rw-r--r-- 1 root root 18012 Jun 18 23:14 LICENSE.GPL-2.0
+-rw-r--r-- 1 root root 20261 Jun 18 23:14 Makefile
+-rw-r--r-- 1 root root  3533 Jun 18 23:14 Makefile.bpf
+-rw-r--r-- 1 root root  2945 Jun 18 23:14 bpf_alignchecker.c
+-rw-r--r-- 1 root root 58666 Jun 18 23:14 bpf_host.c
+-rw-r--r-- 1 root root 76153 Jun 18 23:14 bpf_lxc.c
+-rw-r--r-- 1 root root  2797 Jun 18 23:14 bpf_network.c
+-rw-r--r-- 1 root root 25289 Jun 18 23:14 bpf_overlay.c
+-rw-r--r-- 1 root root 31334 Jun 18 23:14 bpf_sock.c
+-rw-r--r-- 1 root root  1424 Jun 18 23:14 bpf_wireguard.c
+-rw-r--r-- 1 root root  9064 Jun 18 23:14 bpf_xdp.c
+drwxr-xr-x 6 root root  4096 Jun 18 23:14 complexity-tests/
+drwxr-xr-x 2 root root  4096 Jun 18 23:14 custom/
+-rw-r--r-- 1 root root  1870 Jun 18 23:14 ep_config.h
+-rw-r--r-- 1 root root   517 Jun 18 23:14 filter_config.h
+drwxr-xr-x 1 root root  4096 Jun 18 23:14 include/
+drwxr-xr-x 2 root root  4096 Jun 18 23:14 lib/
+-rw-r--r-- 1 root root   404 Jun 18 23:14 netdev_config.h
+-rw-r--r-- 1 root root 10753 Jun 18 23:14 node_config.h
+drwxr-xr-x 4 root root  4096 Jun 18 23:14 tests/
+```
