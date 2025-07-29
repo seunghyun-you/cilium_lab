@@ -1,3 +1,24 @@
+**Table of Contents**
+---
+- [**Table of Contents**](#table-of-contents)
+- [eBPF가 iptables 보다 더 성능이 좋은 이유](#ebpf가-iptables-보다-더-성능이-좋은-이유)
+  - [iptables의 특징](#iptables의-특징)
+  - [iptables 특징으로 인해 발생하는 주요 이슈](#iptables-특징으로-인해-발생하는-주요-이슈)
+  - [eBPF 성능 분석 관련 자료](#ebpf-성능-분석-관련-자료)
+    - [HTTP Request latency 성능](#http-request-latency-성능)
+    - [iptables latency to add rules](#iptables-latency-to-add-rules)
+    - [TCP CRR 성능 테스트](#tcp-crr-성능-테스트)
+    - [참고 자료](#참고-자료)
+- [iptables/netfilter 동작 원리](#iptablesnetfilter-동작-원리)
+  - [iptables와 netfiler](#iptables와-netfiler)
+  - [netfilter 구성요소](#netfilter-구성요소)
+  - [netfilter 트래픽 처리 흐름](#netfilter-트래픽-처리-흐름)
+- [eBPF vs iptables traffic flow](#ebpf-vs-iptables-traffic-flow)
+  - [iptables conntrack overhead](#iptables-conntrack-overhead)
+  - [iptables overhead](#iptables-overhead)
+  - [Context-switch overhead](#context-switch-overhead)
+- [Cilium과 Flannel CNI의 iptables 비교](#cilium과-flannel-cni의-iptables-비교)
+
 ## eBPF가 iptables 보다 더 성능이 좋은 이유
 
 ### iptables의 특징
@@ -117,3 +138,107 @@
 - 여러 프로세스 간에 작업을 전환할 때 발생하는 성능 손실
 
 - 작업 전환이 많아질수록 실제 연산 시간보다 전환에 소요되는 시간이 늘어나 시스템 성능 저하
+
+## Cilium과 Flannel CNI의 iptables 비교
+
+- cilium, flannel cni를 각각 설치 후 iptables에 설정된 nat 테이블의 규칙 목록 비교
+
+  - flannel
+
+    ```bash
+    $ iptables -t nat -S
+    -P PREROUTING ACCEPT
+    -P INPUT ACCEPT
+    -P OUTPUT ACCEPT
+    -P POSTROUTING ACCEPT
+    -N FLANNEL-POSTRTG
+    -N KUBE-KUBELET-CANARY
+    -N KUBE-MARK-MASQ
+    -N KUBE-NODEPORTS
+    -N KUBE-POSTROUTING
+    -N KUBE-PROXY-CANARY
+    -N KUBE-SEP-7FOLOTID7YCXSOEJ
+    -N KUBE-SEP-7XV6E3CD3HB2CMLM
+    -N KUBE-SEP-DFSYEE766Q4KZDEE
+    -N KUBE-SEP-DOVWEW33RROJFUEM
+    -N KUBE-SEP-NBAMRQIHYPBRH37V
+    -N KUBE-SEP-PBFVJUGNX7I4VSY2
+    -N KUBE-SEP-U7HH75UFG3U5VGYY
+    -N KUBE-SEP-VIIO3RTAMBOZLGQX
+    -N KUBE-SEP-XABH6FUURDMVT5Y2
+    -N KUBE-SERVICES
+    -N KUBE-SVC-CNZCPOCNCNOROALA
+    -N KUBE-SVC-ERIFXISQEP7F7OF4
+    -N KUBE-SVC-JD5MR3NA4I4DYORP
+    -N KUBE-SVC-NPX46M4PTMTKRN6Y
+    -N KUBE-SVC-TCOU7JCQXEZGVUNU
+    -A PREROUTING -m comment --comment "kubernetes service portals" -j KUBE-SERVICES
+    -A OUTPUT -m comment --comment "kubernetes service portals" -j KUBE-SERVICES
+    -A POSTROUTING -m comment --comment "kubernetes postrouting rules" -j KUBE-POSTROUTING
+    -A POSTROUTING -m comment --comment "flanneld masq" -j FLANNEL-POSTRTG
+    -A FLANNEL-POSTRTG -m mark --mark 0x4000/0x4000 -m comment --comment "flanneld masq" -j RETURN
+    -A FLANNEL-POSTRTG -s 10.244.0.0/24 -d 10.244.0.0/16 -m comment --comment "flanneld masq" -j RETURN
+    -A FLANNEL-POSTRTG -s 10.244.0.0/16 -d 10.244.0.0/24 -m comment --comment "flanneld masq" -j RETURN
+    -A FLANNEL-POSTRTG ! -s 10.244.0.0/16 -d 10.244.0.0/24 -m comment --comment "flanneld masq" -j RETURN
+    -A FLANNEL-POSTRTG -s 10.244.0.0/16 ! -d 224.0.0.0/4 -m comment --comment "flanneld masq" -j MASQUERADE --random-fully
+    -A FLANNEL-POSTRTG ! -s 10.244.0.0/16 -d 10.244.0.0/16 -m comment --comment "flanneld masq" -j MASQUERADE --random-fully
+    -A KUBE-MARK-MASQ -j MARK --set-xmark 0x4000/0x4000
+    -A KUBE-POSTROUTING -m mark ! --mark 0x4000/0x4000 -j RETURN
+    -A KUBE-POSTROUTING -j MARK --set-xmark 0x4000/0x0
+    -A KUBE-POSTROUTING -m comment --comment "kubernetes service traffic requiring SNAT" -j MASQUERADE --random-fully
+    -A KUBE-SEP-7FOLOTID7YCXSOEJ -s 10.244.2.5/32 -m comment --comment "kube-system/kube-dns:metrics" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-7FOLOTID7YCXSOEJ -p tcp -m comment --comment "kube-system/kube-dns:metrics" -m tcp -j DNAT --to-destination 10.244.2.5:9153
+    -A KUBE-SEP-7XV6E3CD3HB2CMLM -s 10.244.2.6/32 -m comment --comment "kube-system/kube-dns:metrics" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-7XV6E3CD3HB2CMLM -p tcp -m comment --comment "kube-system/kube-dns:metrics" -m tcp -j DNAT --to-destination 10.244.2.6:9153
+    -A KUBE-SEP-DFSYEE766Q4KZDEE -s 10.244.2.6/32 -m comment --comment "kube-system/kube-dns:dns-tcp" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-DFSYEE766Q4KZDEE -p tcp -m comment --comment "kube-system/kube-dns:dns-tcp" -m tcp -j DNAT --to-destination 10.244.2.6:53
+    -A KUBE-SEP-DOVWEW33RROJFUEM -s 10.244.2.5/32 -m comment --comment "kube-system/kube-dns:dns-tcp" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-DOVWEW33RROJFUEM -p tcp -m comment --comment "kube-system/kube-dns:dns-tcp" -m tcp -j DNAT --to-destination 10.244.2.5:53
+    -A KUBE-SEP-NBAMRQIHYPBRH37V -s 10.244.1.4/32 -m comment --comment "default/webpod" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-NBAMRQIHYPBRH37V -p tcp -m comment --comment "default/webpod" -m tcp -j DNAT --to-destination 10.244.1.4:80
+    -A KUBE-SEP-PBFVJUGNX7I4VSY2 -s 10.244.2.5/32 -m comment --comment "kube-system/kube-dns:dns" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-PBFVJUGNX7I4VSY2 -p udp -m comment --comment "kube-system/kube-dns:dns" -m udp -j DNAT --to-destination 10.244.2.5:53
+    -A KUBE-SEP-U7HH75UFG3U5VGYY -s 192.168.20.100/32 -m comment --comment "default/kubernetes:https" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-U7HH75UFG3U5VGYY -p tcp -m comment --comment "default/kubernetes:https" -m tcp -j DNAT --to-destination 192.168.20.100:6443
+    -A KUBE-SEP-VIIO3RTAMBOZLGQX -s 10.244.2.7/32 -m comment --comment "default/webpod" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-VIIO3RTAMBOZLGQX -p tcp -m comment --comment "default/webpod" -m tcp -j DNAT --to-destination 10.244.2.7:80
+    -A KUBE-SEP-XABH6FUURDMVT5Y2 -s 10.244.2.6/32 -m comment --comment "kube-system/kube-dns:dns" -j KUBE-MARK-MASQ
+    -A KUBE-SEP-XABH6FUURDMVT5Y2 -p udp -m comment --comment "kube-system/kube-dns:dns" -m udp -j DNAT --to-destination 10.244.2.6:53
+    -A KUBE-SERVICES -d 10.96.0.10/32 -p tcp -m comment --comment "kube-system/kube-dns:metrics cluster IP" -m tcp --dport 9153 -j KUBE-SVC-JD5MR3NA4I4DYORP
+    -A KUBE-SERVICES -d 10.96.0.10/32 -p udp -m comment --comment "kube-system/kube-dns:dns cluster IP" -m udp --dport 53 -j KUBE-SVC-TCOU7JCQXEZGVUNU
+    -A KUBE-SERVICES -d 10.96.0.10/32 -p tcp -m comment --comment "kube-system/kube-dns:dns-tcp cluster IP" -m tcp --dport 53 -j KUBE-SVC-ERIFXISQEP7F7OF4
+    -A KUBE-SERVICES -d 10.96.0.1/32 -p tcp -m comment --comment "default/kubernetes:https cluster IP" -m tcp --dport 443 -j KUBE-SVC-NPX46M4PTMTKRN6Y
+    -A KUBE-SERVICES -d 10.96.65.151/32 -p tcp -m comment --comment "default/webpod cluster IP" -m tcp --dport 80 -j KUBE-SVC-CNZCPOCNCNOROALA
+    -A KUBE-SERVICES -m comment --comment "kubernetes service nodeports; NOTE: this must be the last rule in this chain" -m addrtype --dst-type LOCAL -j KUBE-NODEPORTS
+    -A KUBE-SVC-CNZCPOCNCNOROALA ! -s 10.244.0.0/16 -d 10.96.65.151/32 -p tcp -m comment --comment "default/webpod cluster IP" -m tcp --dport 80 -j KUBE-MARK-MASQ
+    -A KUBE-SVC-CNZCPOCNCNOROALA -m comment --comment "default/webpod -> 10.244.1.4:80" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-NBAMRQIHYPBRH37V
+    -A KUBE-SVC-CNZCPOCNCNOROALA -m comment --comment "default/webpod -> 10.244.2.7:80" -j KUBE-SEP-VIIO3RTAMBOZLGQX
+    -A KUBE-SVC-ERIFXISQEP7F7OF4 ! -s 10.244.0.0/16 -d 10.96.0.10/32 -p tcp -m comment --comment "kube-system/kube-dns:dns-tcp cluster IP" -m tcp --dport 53 -j KUBE-MARK-MASQ
+    -A KUBE-SVC-ERIFXISQEP7F7OF4 -m comment --comment "kube-system/kube-dns:dns-tcp -> 10.244.2.5:53" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-DOVWEW33RROJFUEM
+    -A KUBE-SVC-ERIFXISQEP7F7OF4 -m comment --comment "kube-system/kube-dns:dns-tcp -> 10.244.2.6:53" -j KUBE-SEP-DFSYEE766Q4KZDEE
+    -A KUBE-SVC-JD5MR3NA4I4DYORP ! -s 10.244.0.0/16 -d 10.96.0.10/32 -p tcp -m comment --comment "kube-system/kube-dns:metrics cluster IP" -m tcp --dport 9153 -j KUBE-MARK-MASQ
+    -A KUBE-SVC-JD5MR3NA4I4DYORP -m comment --comment "kube-system/kube-dns:metrics -> 10.244.2.5:9153" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-7FOLOTID7YCXSOEJ
+    -A KUBE-SVC-JD5MR3NA4I4DYORP -m comment --comment "kube-system/kube-dns:metrics -> 10.244.2.6:9153" -j KUBE-SEP-7XV6E3CD3HB2CMLM
+    -A KUBE-SVC-NPX46M4PTMTKRN6Y ! -s 10.244.0.0/16 -d 10.96.0.1/32 -p tcp -m comment --comment "default/kubernetes:https cluster IP" -m tcp --dport 443 -j KUBE-MARK-MASQ
+    -A KUBE-SVC-NPX46M4PTMTKRN6Y -m comment --comment "default/kubernetes:https -> 192.168.20.100:6443" -j KUBE-SEP-U7HH75UFG3U5VGYY
+    -A KUBE-SVC-TCOU7JCQXEZGVUNU ! -s 10.244.0.0/16 -d 10.96.0.10/32 -p udp -m comment --comment "kube-system/kube-dns:dns cluster IP" -m udp --dport 53 -j KUBE-MARK-MASQ
+    -A KUBE-SVC-TCOU7JCQXEZGVUNU -m comment --comment "kube-system/kube-dns:dns -> 10.244.2.5:53" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-PBFVJUGNX7I4VSY2
+    -A KUBE-SVC-TCOU7JCQXEZGVUNU -m comment --comment "kube-system/kube-dns:dns -> 10.244.2.6:53" -j KUBE-SEP-XABH6FUURDMVT5Y2
+    ```
+
+  - cilium
+
+    ```bash
+    $ iptables -t nat -S
+    -P PREROUTING ACCEPT
+    -P INPUT ACCEPT
+    -P OUTPUT ACCEPT
+    -P POSTROUTING ACCEPT
+    -N CILIUM_OUTPUT_nat
+    -N CILIUM_POST_nat
+    -N CILIUM_PRE_nat
+    -N KUBE-KUBELET-CANARY
+    -A PREROUTING -m comment --comment "cilium-feeder: CILIUM_PRE_nat" -j CILIUM_PRE_nat
+    -A OUTPUT -m comment --comment "cilium-feeder: CILIUM_OUTPUT_nat" -j CILIUM_OUTPUT_nat
+    -A POSTROUTING -m comment --comment "cilium-feeder: CILIUM_POST_nat" -j CILIUM_POST_nat
+    ```
