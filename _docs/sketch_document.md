@@ -931,7 +931,7 @@ $ c0 bpf lb list --revnat | grep 10.0.250.0
 
 - XDP(eXpress Data Path): 네트워크 드라이버 레벨에서 패킷을 처리하여 커널 스택에 진입하기 전에 고성능 패킷 필터링 및 조작을 수행합니다.
 
-![alt text](./_image/ebpf_kernel_hook_point.png)
+![alt text](../_image/ebpf_kernel_hook_point.png)
 
 ---
 
@@ -1057,7 +1057,7 @@ IPv4 BIG TCP:           Disabled
 ```
 
 
-## Cilium Agent 내부에 있는 C언어 파일
+<!-- ## Cilium Agent 내부에 있는 C언어 파일
 
 ```bash
 cd /var/lib/cilium/bpf/
@@ -1087,4 +1087,4 @@ drwxr-xr-x 2 root root  4096 Jun 18 23:14 lib/
 -rw-r--r-- 1 root root   404 Jun 18 23:14 netdev_config.h
 -rw-r--r-- 1 root root 10753 Jun 18 23:14 node_config.h
 drwxr-xr-x 4 root root  4096 Jun 18 23:14 tests/
-```
+``` -->
