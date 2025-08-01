@@ -1,0 +1,25 @@
+cluster:
+  name: kind-kind
+
+k8sServiceHost: kind-control-plane
+k8sServicePort: 6443
+kubeProxyReplacement: strict
+
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+ipam:
+  mode: kubernetes
+
+# Cilium Routing
+routingMode: native
+ipv4NativeRoutingCIDR: 10.244.0.0/16
+enableIPv4Masquerade: true
+autoDirectNodeRoutes: true
