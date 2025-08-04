@@ -141,9 +141,23 @@
 
 ## Cilium과 Flannel CNI의 iptables 비교
 
-- cilium, flannel cni를 각각 설치 후 iptables에 설정된 nat 테이블의 규칙 목록 비교
+- flannel 설치 후 통신 테스트용 pod와 service type 리소스 배포 결과
 
-  - flannel
+  - 리소스 조회
+
+    ``` bash
+    $ kubectl get po,svc -owide
+    NAME                          READY   STATUS    RESTARTS      AGE   IP            NODE          NOMINATED NODE   READINESS GATES
+    pod/curl-pod                  1/1     Running   9 (29m ago)   21d   10.244.0.5    flannel-ctr   <none>           <none>
+    pod/webpod-697b545f57-7rsn9   1/1     Running   2 (46h ago)   21d   10.244.2.10   flannel-w2    <none>           <none>
+    pod/webpod-697b545f57-85vnd   1/1     Running   3 (46h ago)   21d   10.244.1.5    flannel-w1    <none>           <none>
+
+    NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+    service/kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   21d   <none>
+    service/webpod       ClusterIP   10.96.65.151   <none>        80/TCP    21d   app=webpod
+    ```
+
+  - iptables 정보 조회
 
     ```bash
     $ iptables -t nat -S
@@ -226,7 +240,23 @@
     -A KUBE-SVC-TCOU7JCQXEZGVUNU -m comment --comment "kube-system/kube-dns:dns -> 10.244.2.6:53" -j KUBE-SEP-XABH6FUURDMVT5Y2
     ```
 
-  - cilium
+- cilium 설치 후 통신 테스트용 pod와 service type 리소스 배포 결과
+
+  - 리소스 조회
+
+    ``` bash
+    $ kubectl get po,svc -owide
+    NAME                          READY   STATUS    RESTARTS      AGE     IP             NODE         NOMINATED NODE   READINESS GATES
+    pod/curl-pod                  1/1     Running   3 (10h ago)   5d23h   172.20.2.97    cilium-ctr   <none>           <none>
+    pod/webpod-697b545f57-ggx49   1/1     Running   5 (14h ago)   46h     172.20.0.113   cilium-w1    <none>           <none>
+    pod/webpod-697b545f57-qgl6m   1/1     Running   1 (27h ago)   6d2h    172.20.1.222   cilium-w2    <none>           <none>
+
+    NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+    service/kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   7d1h    <none>
+    service/webpod       ClusterIP   10.96.88.175   <none>        80/TCP    6d17h   app=webpod
+    ```
+
+  - iptables 정보 조회
 
     ```bash
     $ iptables -t nat -S
@@ -242,3 +272,4 @@
     -A OUTPUT -m comment --comment "cilium-feeder: CILIUM_OUTPUT_nat" -j CILIUM_OUTPUT_nat
     -A POSTROUTING -m comment --comment "cilium-feeder: CILIUM_POST_nat" -j CILIUM_POST_nat
     ```
+- cilium은 iptables 대신 eBPF 프로그램을 사용하기 때문에 iptables의 nat 테이블 내에는 조회되는 데이터가 없다.
