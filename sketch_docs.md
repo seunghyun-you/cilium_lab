@@ -17,35 +17,6 @@
 
 
 
-## flannel 정보 분석
-
-- iptables 정보에서 Service와 관련된 정보 검색
-
-```bash
-# kubectl get svc
-NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   20d
-webpod       ClusterIP   10.96.65.151   <none>        80/TCP    20d
-# kubectl get po -owide
-NAME                      READY   STATUS    RESTARTS      AGE   IP            NODE          NOMINATED NODE   READINESS GATES
-curl-pod                  1/1     Running   6 (8h ago)    20d   10.244.0.4    flannel-ctr   <none>           <none>
-webpod-697b545f57-7rsn9   1/1     Running   2 (28h ago)   20d   10.244.2.10   flannel-w2    <none>           <none>
-webpod-697b545f57-85vnd   1/1     Running   3 (28h ago)   20d   10.244.1.5    flannel-w1    <none>           <none>
-```
-
-```bash
-# iptables -nL -t nat
-Chain KUBE-SVC-CNZCPOCNCNOROALA (1 references)
-target     prot opt source               destination         
-KUBE-MARK-MASQ  6    -- !10.244.0.0/16        10.96.65.151         /* default/webpod cluster IP */ tcp dpt:80
-KUBE-SEP-4XUJ5ZCGHF23EWGS  0    --  0.0.0.0/0            0.0.0.0/0            /* default/webpod -> 10.244.1.5:80 */ statistic mode random probability 0.50000000000
-KUBE-SEP-OLWBTI6CZXA3JRRX  0    --  0.0.0.0/0            0.0.0.0/0            /* default/webpod -> 10.244.2.10:80 */
-```
-
-- 10.244.0.0/16 외부 대역에서 들어 오는 트래픽 중 10.96.65.151:80 IP:PORT를 목적지로 오는 패킷이라면
-- `10.244.1.5:80`,  `10.244.2.10:80` 목적지로 Masquerading 하여 RoundRobin 방식으로 라우팅하는 NAT 정책
-- 이런 iptables 정보가 cilium에서는 보이지 않는다. eBPF를 통해서 처리되고 있기 때문이다.
-
 
 ## cilium-agent 정보 
 
@@ -294,3 +265,118 @@ int cil_to_host(struct __ctx_buff *ctx)
   - `trace_ctx` 구조체 타입의 변수 trace를 생성한다.
   - trace 변수 내부의 `reason`, `monitor` 멤버의 값을 0 또는 `TRACE_REASON_UNKNOWN` 값으로 초기화 한다.
   - 나머지도 동일한 형식으로 변수를 초기화 한다.
+
+
+
+## termshark 
+
+![alt text](image.png)
+
+```bash
+ k get po -owide
+NAME                      READY   STATUS        RESTARTS        AGE     IP             NODE         NOMINATED NODE   READINESS GATES
+curl-pod                  1/1     Running       5 (3h44m ago)   7d1h    172.20.2.40    cilium-ctr   <none>           <none>
+pod-01                    1/1     Running       1 (3h44m ago)   4h44m   172.20.2.89    cilium-ctr   <none>           <none>
+pod-02                    1/1     Running       1 (3h44m ago)   4h44m   172.20.2.80    cilium-ctr   <none>           <none>
+```
+
+- PCSSYSTEMtec_ MAC 주소의 정체
+
+  - PCSSYSTEMtec_ MAC(OUI) 주소는 "08:00:27"로 시작하는 MAC 주소
+  - MAC 주소의 앞 6자리는 제조사 코드 (OUI)이며, 뒤 6자리는 장치 고유 식별 코드
+  - 뒤에 붙는 나머지 MAC 주소는 물리장치의 고유 식별 코드
+
+
+    ![alt text](image-1.png)
+
+
+# flannel test
+
+
+- 각 서버의 정보 조회
+```bash
+#k get po -owide
+NAME                      READY   STATUS    RESTARTS        AGE     IP            NODE          NOMINATED NODE   READINESS GATES
+curl-pod                  1/1     Running   0               8m32s   10.244.0.7    flannel-ctr   <none>           <none>
+webpod-697b545f57-7rsn9   1/1     Running   4 (9m35s ago)   22d     10.244.2.16   flannel-w2    <none>           <none>
+webpod-697b545f57-85vnd   1/1     Running   4 (16m ago)     22d     10.244.1.6    flannel-w1    <none>           <none>
+# k get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   22d
+webpod       ClusterIP   10.96.65.151   <none>        80/TCP    22d
+```
+
+- curl-pod 에서 cluster type service의 도메인 정보로 통신 시도하면 응답이 온다.
+```bash
+#k exec -it curl-pod -- curl webpod
+Hostname: webpod-697b545f57-85vnd
+IP: 127.0.0.1
+IP: ::1
+IP: 10.244.1.6
+IP: fe80::6c9c:39ff:fe9d:c5e5
+RemoteAddr: 10.244.0.7:35830
+GET / HTTP/1.1
+Host: webpod
+User-Agent: curl/8.14.1
+Accept: */*
+```
+
+
+- 최초 10.96.0.10 으로 DNS 질의 시도 후 webpod service ip로 통신 시도하는 것 확인
+- dump에 찍히는 ip는 pod의 ip가 아니라 service ip가 찍힘
+- webpod service ip `10.96.65.151` 그대로 찍어도 마찬가지
+```bash
+# k exec -it curl-pod -- tcpdump -i any -q -nn
+13:35:38.166570 eth0  Out IP 10.244.0.7.36701 > 10.96.0.10.53: UDP, length 73
+13:35:38.166648 eth0  Out IP 10.244.0.7.36701 > 10.96.0.10.53: UDP, length 73
+13:35:38.167349 eth0  In  IP 10.96.0.10.53 > 10.244.0.7.36701: UDP, length 121
+13:35:38.167453 eth0  In  IP 10.96.0.10.53 > 10.244.0.7.36701: UDP, length 166
+13:35:38.167540 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 0  # 10.96.65.151 == webpod service ip(cluster type)
+13:35:38.167984 eth0  In  IP 10.96.65.151.80 > 10.244.0.7.35830: tcp 0
+13:35:38.168019 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 0
+13:35:38.168058 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 70
+13:35:38.168208 eth0  In  IP 10.96.65.151.80 > 10.244.0.7.35830: tcp 0
+13:35:38.168503 eth0  In  IP 10.96.65.151.80 > 10.244.0.7.35830: tcp 318
+13:35:38.168511 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 0
+13:35:38.168618 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 0
+13:35:38.168772 eth0  In  IP 10.96.65.151.80 > 10.244.0.7.35830: tcp 0
+13:35:38.168776 eth0  Out IP 10.244.0.7.35830 > 10.96.65.151.80: tcp 0
+```
+
+- 10.96.0.10 은 coredns의 service ip
+```bash
+k get svc -A -owide | grep 10.96.0.10
+kube-system   kube-dns     ClusterIP   10.96.0.10     <none>        53/UDP,53/TCP,9153/TCP   22d   k8s-app=kube-dns
+```
+
+
+- 특정 webpod로 보내면?
+```bash
+# k exec -it curl-pod -- curl 10.244.2.16
+Hostname: webpod-697b545f57-7rsn9
+IP: 127.0.0.1
+IP: ::1
+IP: 10.244.2.16
+IP: fe80::20c5:22ff:fea7:7046
+RemoteAddr: 10.244.0.7:57976
+GET / HTTP/1.1
+Host: 10.244.2.16
+User-Agent: curl/8.14.1
+Accept: */*
+```
+```bash
+14:01:26.687401 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 0
+14:01:26.687980 eth0  In  IP 10.244.2.16.80 > 10.244.0.7.57976: tcp 0
+14:01:26.688004 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 0
+14:01:26.688054 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 75
+14:01:26.688312 eth0  In  IP 10.244.2.16.80 > 10.244.0.7.57976: tcp 0
+14:01:26.688973 eth0  In  IP 10.244.2.16.80 > 10.244.0.7.57976: tcp 324
+14:01:26.688985 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 0
+14:01:26.689350 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 0
+14:01:26.689587 eth0  In  IP 10.244.2.16.80 > 10.244.0.7.57976: tcp 0
+14:01:26.689593 eth0  Out IP 10.244.0.7.57976 > 10.244.2.16.80: tcp 0
+14:01:31.768957 eth0  In  ARP, Request who-has 10.244.0.7 tell 10.244.0.1, length 28
+14:01:31.768998 eth0  Out ARP, Reply 10.244.0.7 is-at fe:d7:62:a7:ae:53, length 28
+14:01:31.769952 eth0  Out ARP, Request who-has 10.244.0.1 tell 10.244.0.7, length 28
+14:01:31.770105 eth0  In  ARP, Reply 10.244.0.1 is-at ae:71:7c:a9:15:0a, length 28
+```

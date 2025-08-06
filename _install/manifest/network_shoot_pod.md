@@ -36,7 +36,7 @@ spec:
   terminationGracePeriodSeconds: 0
 ```
 
-### cilium-w1~2 노드에 netshoot-pod 배포
+### cilium-w1~2 노드에 webpod 배포
 
 ```bash
 cat << EOF | kubectl apply -f -
