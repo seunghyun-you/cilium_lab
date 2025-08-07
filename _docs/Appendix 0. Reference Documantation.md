@@ -9,6 +9,7 @@
 |                 | [What is Cilium?](https://kim-dragon.tistory.com/276)                                                                                                                                                      |
 |                 | [An entertaining eBPF XDP adventure](https://suchakra.wordpress.com/2017/05/23/an-entertaining-ebpf-xdp-adventure/)                                                                                        |
 |                 | [EBPF](https://zerotay-blog.vercel.app/4.RESOURCE/KNOWLEDGE/OS/eBPF/)                                                                                                                                      |
+|                 | [eBPF & XDP Network Programming](https://slowbootkernelhacks.blogspot.com/2024/10/ebpf-xdp.html)                                                                                                           |
 | Enterprise_Blog | [KT_Cloud-Cilium CNI](https://tech.ktcloud.com/250)                                                                                                                                                        |
 |                 | [Cilium-replacing iptables](https://cilium.io/blog/2018/04/17/why-is-the-kernel-community-replacing-iptables/)                                                                                             |
 |                 | [Why replace from iptables to eBPF](https://isovalent.com/blog/post/why-replace-iptables-with-ebpf/)                                                                                                       |

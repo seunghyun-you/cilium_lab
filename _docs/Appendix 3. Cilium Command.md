@@ -24,7 +24,7 @@
   # filter : endpoint id
   kubectl exec -n kube-system -c cilium-agent -it ds/cilium -- cilium-dbg monitor --related-to=<id>
   # filter : drop packet
-  kubectl exec -n kube-system -c cilium-agent -it ds/cilium -- cilium-dbg monitor --type dro
+  kubectl exec -n kube-system -c cilium-agent -it ds/cilium -- cilium-dbg monitor --type drop
   ```
 
 - Hubble UI 접속 설정
@@ -39,9 +39,17 @@
   echo -e "http://$NODEIP:$PORT"
   ```
 
-- 
+- Hubble trace 설정
 
   ```bash
+  # Hubble Relay 설정
+  cilium hubble port-forward&
+  # 상태 확인
+  hubble status
+  # 전체 모니터링 
+  hubble observe -f
+  # protocol 지정
+  hubble observe -f --protocol icmp 
   ```
 
 - 
