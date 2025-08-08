@@ -101,6 +101,8 @@ rm hubble-linux-${HUBBLE_ARCH}.tar.gz
 
 echo "[TASK 9] local DNS with hosts file"
 echo "192.168.10.100 cilium-ctr" >> /etc/hosts
+echo "192.168.20.100 cilium-w0" >> /etc/hosts
+echo "192.168.10.200 cilium-r" >> /etc/hosts
 for (( i=1; i<=${NODES}; i++  )); do echo "192.168.10.10$i cilium-w$i" >> /etc/hosts; done
 
 echo "[TASK 10] Install Prometheus & Grafana"
@@ -112,6 +114,49 @@ kubectl patch svc -n cilium-monitoring grafana -p '{"spec": {"type": "NodePort",
 echo "[TASK 11] Dynamically provisioning persistent local storage with Kubernetes"
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.31/deploy/local-path-storage.yaml >/dev/null 2>&1
 kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' >/dev/null 2>&1
+
+
+# echo "[TASK 12] Install Prometheus Stack"
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts  >/dev/null 2>&1
+# cat <<EOT > monitor-values.yaml
+# prometheus:
+#   prometheusSpec:
+#     scrapeInterval: "15s"
+#     evaluationInterval: "15s"
+#   service:
+#     type: NodePort
+#     nodePort: 30001
+
+# grafana:
+#   defaultDashboardsTimezone: Asia/Seoul
+#   adminPassword: prom-operator
+#   service:
+#     type: NodePort
+#     nodePort: 30002
+
+# alertmanager:
+#   enabled: false
+# defaultRules:
+#   create: false
+# prometheus-windows-exporter:
+#   prometheus:
+#     monitor:
+#       enabled: false
+# EOT
+# helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 75.15.1 \
+#   -f monitor-values.yaml --create-namespace --namespace monitoring  >/dev/null 2>&1
+
+echo "[TASK 13] Install Metrics-server"
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/  >/dev/null 2>&1
+helm upgrade --install metrics-server metrics-server/metrics-server --set 'args[0]=--kubelet-insecure-tls' -n kube-system  >/dev/null 2>&1
+
+
+echo "[TASK 14] Install k9s"
+CLI_ARCH=amd64
+if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+wget https://github.com/derailed/k9s/releases/latest/download/k9s_linux_${CLI_ARCH}.deb -O /tmp/k9s_linux_${CLI_ARCH}.deb  >/dev/null 2>&1
+apt install /tmp/k9s_linux_${CLI_ARCH}.deb  >/dev/null 2>&1
+
 
 
 echo ">>>> K8S Controlplane Config End <<<<"
