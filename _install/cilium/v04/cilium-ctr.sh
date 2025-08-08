@@ -101,9 +101,9 @@ rm hubble-linux-${HUBBLE_ARCH}.tar.gz
 
 echo "[TASK 9] local DNS with hosts file"
 echo "192.168.10.100 cilium-ctr" >> /etc/hosts
-echo "192.168.20.100 cilium-w0" >> /etc/hosts
 echo "192.168.10.200 cilium-r" >> /etc/hosts
 for (( i=1; i<=${NODES}; i++  )); do echo "192.168.10.10$i cilium-w$i" >> /etc/hosts; done
+echo "192.168.20.100 cilium-w3" >> /etc/hosts
 
 echo "[TASK 10] Install Prometheus & Grafana"
 kubectl apply -f https://raw.githubusercontent.com/cilium/cilium/1.17.6/examples/kubernetes/addons/prometheus/monitoring-example.yaml >/dev/null 2>&1

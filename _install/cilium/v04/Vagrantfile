@@ -77,18 +77,18 @@ Vagrant.configure("2") do |config|
   end
 
 #-Worker Nodes Subnet2
-  config.vm.define "cilium-w0" do |subconfig|
+  config.vm.define "cilium-w3" do |subconfig|
     subconfig.vm.box = BOX_IMAGE
     subconfig.vm.box_version = BOX_VERSION
     subconfig.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--groups", "/Cilium-Lab"]
       vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-      vb.name = "cilium-w0"
+      vb.name = "cilium-w3"
       vb.cpus = 2
       vb.memory = 1536
       vb.linked_clone = true
     end
-    subconfig.vm.host_name = "cilium-w0"
+    subconfig.vm.host_name = "cilium-w3"
     subconfig.vm.network "private_network", ip: "192.168.20.100"
     subconfig.vm.network "forwarded_port", guest: 22, host: 60010, auto_correct: true, id: "ssh"
     subconfig.vm.synced_folder "./", "/vagrant", disabled: true
