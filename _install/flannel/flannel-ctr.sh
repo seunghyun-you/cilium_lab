@@ -3,7 +3,7 @@
 echo ">>>> K8S Controlplane config Start <<<<"
 
 echo "[TASK 1] Initial Kubernetes"
-kubeadm init --token 123456.1234567890123456 --token-ttl 0 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/16 --apiserver-advertise-address=192.168.20.100 --cri-socket=unix:///run/containerd/containerd.sock >/dev/null 2>&1
+kubeadm init --token 123456.1234567890123456 --token-ttl 0 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/16 --apiserver-advertise-address=192.168.50.100 --cri-socket=unix:///run/containerd/containerd.sock >/dev/null 2>&1
 
 
 echo "[TASK 2] Setting kube config file"
@@ -45,8 +45,28 @@ kubectl config rename-context "kubernetes-admin@kubernetes" "HomeLab" >/dev/null
 
 
 echo "[TASK 7] Update /etc/hosts with cluster nodes"
-echo "192.168.20.100 flannel-ctr" >> /etc/hosts
-for (( i=1; i<=$1; i++  )); do echo "192.168.20.10$i flannel-w$i" >> /etc/hosts; done
+echo "192.168.50.100 flannel-ctr" >> /etc/hosts
+for (( i=1; i<=$1; i++  )); do echo "192.168.50.10$i flannel-w$i" >> /etc/hosts; done
+
+
+echo "[TASK 8] Flannel Install"
+kubectl create ns kube-flannel
+kubectl label --overwrite ns kube-flannel pod-security.kubernetes.io/enforce=privileged
+helm repo add flannel https://flannel-io.github.io/flannel/
+helm repo list
+helm search repo flannel
+helm show values flannel/flannel
+# flannel yaml setting
+cat << EOF > flannel-values.yaml
+podCidr: "10.244.0.0/16"
+
+flannel:
+  args:
+  - "--ip-masq"
+  - "--kube-subnet-mgr"
+  - "--iface=eth1"
+EOF
+helm install flannel --namespace kube-flannel flannel/flannel -f flannel-values.yaml
 
 
 echo ">>>> K8S Controlplane Config End <<<<"
