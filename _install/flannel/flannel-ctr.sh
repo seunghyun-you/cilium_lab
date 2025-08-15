@@ -51,13 +51,15 @@ for (( i=1; i<=$1; i++  )); do echo "192.168.50.10$i flannel-w$i" >> /etc/hosts;
 
 echo "[TASK 8] Flannel Install"
 kubectl create ns kube-flannel
+
 kubectl label --overwrite ns kube-flannel pod-security.kubernetes.io/enforce=privileged
 helm repo add flannel https://flannel-io.github.io/flannel/
-helm repo list
+helm repo update
 helm search repo flannel
 helm show values flannel/flannel
+
 # flannel yaml setting
-cat << EOF > flannel-values.yaml
+cat << EOF > /home/vagrant/flannel-values.yaml
 podCidr: "10.244.0.0/16"
 
 flannel:
@@ -66,7 +68,8 @@ flannel:
   - "--kube-subnet-mgr"
   - "--iface=eth1"
 EOF
-helm install flannel --namespace kube-flannel flannel/flannel -f flannel-values.yaml
+
+helm install flannel --namespace kube-flannel flannel/flannel -f /home/vagrant/flannel-values.yaml
 
 
 echo ">>>> K8S Controlplane Config End <<<<"

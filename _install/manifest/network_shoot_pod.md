@@ -5,11 +5,26 @@ cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
 metadata:
-  name: curl-pod
+  name: curl-pod-01
   labels:
     app: curl
 spec:
-  nodeName: cilium-ctr
+  nodeName: flannel-ctr
+  containers:
+  - name: curl
+    image: nicolaka/netshoot
+    command: ["tail"]
+    args: ["-f", "/dev/null"]
+  terminationGracePeriodSeconds: 0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-pod-02
+  labels:
+    app: curl
+spec:
+  nodeName: flannel-ctr
   containers:
   - name: curl
     image: nicolaka/netshoot
