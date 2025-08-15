@@ -8,6 +8,23 @@
   cilium config view | grep -i hubble
   ```
 
+- cilium endpoint 정보 조회
+
+  ```bash
+  # 엔드포인트 기준 ID
+  c0 identity list --endpoints
+
+  # 엔드포인트 설정 확인 및 변경
+  c0 endpoint config <엔트포인트ID>
+
+  # 엔드포인트 상세 정보 확인
+  c0 endpoint get <엔트포인트ID>
+
+  # 엔드포인트 로그 확인
+  c0 endpoint log <엔트포인트ID>
+  ```
+
+
 - cilium metric 수집 항목 리스트
 
   ```bash
@@ -50,13 +67,11 @@
   hubble observe -f
   # protocol 지정
   hubble observe -f --protocol icmp 
+  # identity 지정
+  hubble observe -f --from-identity <IDENTITY_ID>
+  # pod 지정
+  hubble observe -f --pod <NAMESPACE/POD_NAME>
   ```
-
-- 
-
-  ```bash
-  ```
-
 - 
 
   ```bash

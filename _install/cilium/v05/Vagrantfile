@@ -12,18 +12,18 @@ BOX_VERSION = "202502.21.0"
 
 Vagrant.configure("2") do |config|
 #-ControlPlane Node
-    config.vm.define "cilium-ctr" do |subconfig|
+    config.vm.define "cilium-control" do |subconfig|
       subconfig.vm.box = BOX_IMAGE
       subconfig.vm.box_version = BOX_VERSION
       subconfig.vm.provider "virtualbox" do |vb|
         vb.customize ["modifyvm", :id, "--groups", "/Cilium-Lab-W5"]
         vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-        vb.name = "cilium-ctr"
+        vb.name = "cilium-control"
         vb.cpus = 2
-        vb.memory = 2560
+        vb.memory = 2048
         vb.linked_clone = true
       end
-      subconfig.vm.host_name = "cilium-ctr"
+      subconfig.vm.host_name = "cilium-control"
       subconfig.vm.network "private_network", ip: "192.168.60.100"
       subconfig.vm.network "forwarded_port", guest: 22, host: 60000, auto_correct: true, id: "ssh"
       subconfig.vm.synced_folder "./", "/vagrant", disabled: true
@@ -34,17 +34,17 @@ Vagrant.configure("2") do |config|
     end
 
 #-Router Node
-  config.vm.define "cilium-r" do |subconfig|
+  config.vm.define "cilium-router" do |subconfig|
     subconfig.vm.box = BOX_IMAGE
     subconfig.vm.box_version = BOX_VERSION
     subconfig.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--groups", "/Cilium-Lab-W5"]
-      vb.name = "cilium-r"
+      vb.name = "cilium-router"
       vb.cpus = 1
       vb.memory = 1024
       vb.linked_clone = true
     end
-    subconfig.vm.host_name = "cilium-r"
+    subconfig.vm.host_name = "cilium-router"
     subconfig.vm.network "private_network", ip: "192.168.60.200"
     subconfig.vm.network "private_network", ip: "192.168.20.200", auto_config: false
     subconfig.vm.network "forwarded_port", guest: 22, host: 60009, auto_correct: true, id: "ssh"
@@ -54,18 +54,18 @@ Vagrant.configure("2") do |config|
 
 #-Worker Nodes Subnet1
   (1..N).each do |i|
-    config.vm.define "cilium-w#{i}" do |subconfig|
+    config.vm.define "cilium-worker0#{i}" do |subconfig|
       subconfig.vm.box = BOX_IMAGE
       subconfig.vm.box_version = BOX_VERSION
       subconfig.vm.provider "virtualbox" do |vb|
         vb.customize ["modifyvm", :id, "--groups", "/Cilium-Lab-W5"]
         vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-        vb.name = "cilium-w#{i}"
-        vb.cpus = 2
-        vb.memory = 2048
+        vb.name = "cilium-worker0#{i}"
+        vb.cpus = 1
+        vb.memory = 1024
         vb.linked_clone = true
       end
-      subconfig.vm.host_name = "cilium-w#{i}"
+      subconfig.vm.host_name = "cilium-worker0#{i}"
       subconfig.vm.network "private_network", ip: "192.168.60.10#{i}"
       subconfig.vm.network "forwarded_port", guest: 22, host: "6000#{i}", auto_correct: true, id: "ssh"
       subconfig.vm.synced_folder "./", "/vagrant", disabled: true
@@ -77,18 +77,18 @@ Vagrant.configure("2") do |config|
   end
 
 #-Worker Nodes Subnet2
-  config.vm.define "cilium-w3" do |subconfig|
+  config.vm.define "cilium-worker02" do |subconfig|
     subconfig.vm.box = BOX_IMAGE
     subconfig.vm.box_version = BOX_VERSION
     subconfig.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--groups", "/Cilium-Lab-W5"]
       vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
-      vb.name = "cilium-w3"
-      vb.cpus = 2
-      vb.memory = 2048
+      vb.name = "cilium-worker02"
+      vb.cpus = 1
+      vb.memory = 1024
       vb.linked_clone = true
     end
-    subconfig.vm.host_name = "cilium-w3"
+    subconfig.vm.host_name = "cilium-worker02"
     subconfig.vm.network "private_network", ip: "192.168.160.100"
     subconfig.vm.network "forwarded_port", guest: 22, host: 60010, auto_correct: true, id: "ssh"
     subconfig.vm.synced_folder "./", "/vagrant", disabled: true

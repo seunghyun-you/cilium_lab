@@ -380,3 +380,13 @@ Accept: */*
 14:01:31.769952 eth0  Out ARP, Request who-has 10.244.0.1 tell 10.244.0.7, length 28
 14:01:31.770105 eth0  In  ARP, Reply 10.244.0.1 is-at ae:71:7c:a9:15:0a, length 28
 ```
+
+
+
+## 5W
+
+- FRR : 리눅스 서버에서 Network 장비 기능을 활용해서 실습할 수 있게 지원해주는 서비스
+- auto Direct Node Route : 옵션 제거한 이유는 BGP를 이용하기 때문 -> 이 거 없으면 다른 노드의 PodCIDR 정보가 Route 테이블에 정보가 올라오지 않음
+- enable-bgp-control-plane : 설치 옵션에 추가되면 cilium이 bgp 사용함이 활성화 된것
+- LB IPAM을 쓸 때 BGP를 쓰면 노드의 IP Pool과 다른 IP 값을 사용해도 상관 없다. (L2 사용 시 같은 대역이어야 함)
+-  
