@@ -10,7 +10,7 @@ chmod 600 /etc/netplan/50-vagrant.yaml
 cat << EOT >> /etc/netplan/50-vagrant.yaml
     eth2:
       addresses:
-      - 192.168.20.200/24
+      - 192.168.160.200/24
 EOT
 
 netplan apply
@@ -77,3 +77,5 @@ systemctl enable frr >/dev/null 2>&1
 
 
 echo ">>>> Initial Config End <<<<"
+
+S

@@ -57,15 +57,15 @@ NODEIP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 helm repo add cilium https://helm.cilium.io/ >/dev/null 2>&1
 helm repo update >/dev/null 2>&1
 helm install cilium cilium/cilium --version ${CILIUMV} --namespace kube-system \
---set k8sServiceHost=192.168.10.100 \
+--set k8sServiceHost=192.168.60.100 \
 --set k8sServicePort=6443 \
 --set ipam.mode="cluster-pool" \
 --set ipam.operator.clusterPoolIPv4PodCIDRList={"172.20.0.0/16"} \
 --set ipv4NativeRoutingCIDR=172.20.0.0/16 \
 --set routingMode=native \
 --set autoDirectNodeRoutes=false \
---set bgpControlPlane.enabled=true \
 --set endpointRoutes.enabled=false \
+--set bgpControlPlane.enabled=true \
 --set kubeProxyReplacement=true \
 --set bpf.masquerade=true \
 --set installNoConntrackIptablesRules=true \
