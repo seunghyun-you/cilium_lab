@@ -77,5 +77,3 @@ systemctl enable frr >/dev/null 2>&1
 
 
 echo ">>>> Initial Config End <<<<"
-
-S
