@@ -9,13 +9,19 @@ metadata:
   labels:
     app: curl
 spec:
-  nodeName: flannel-ctr
+  nodeName: cilium-ctr
   containers:
   - name: curl
     image: nicolaka/netshoot
     command: ["tail"]
     args: ["-f", "/dev/null"]
-  terminationGracePeriodSeconds: 0
+    securityContext:
+      privileged: true
+      capabilities:
+        add:
+        - SYS_ADMIN
+        - NET_ADMIN
+        - SYS_PTRACE
 ---
 apiVersion: v1
 kind: Pod
@@ -24,7 +30,7 @@ metadata:
   labels:
     app: curl
 spec:
-  nodeName: flannel-ctr
+  nodeName: cilium-ctr
   containers:
   - name: curl
     image: nicolaka/netshoot
