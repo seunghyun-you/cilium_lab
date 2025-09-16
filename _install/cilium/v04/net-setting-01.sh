@@ -12,7 +12,7 @@ cat <<EOT>> /etc/netplan/50-vagrant.yaml
       - to: 172.20.0.0/16
         via: 192.168.10.200
       - to: 10.10.0.0/16
-        via: 192.168.10.200c
+        via: 192.168.10.200
 EOT
 
 netplan apply
